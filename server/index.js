@@ -20,6 +20,12 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/interviews', require('./routes/interviews'));
 app.use('/api/worklogs', require('./routes/worklogs'));
 app.use('/api/upload', require('./routes/uploads'));
+app.use('/api/tesol', require('./routes/tesol'));
+
+// React SPA fallback (/app/*)
+app.get('/app/*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'app', 'index.html'));
+});
 
 // Root → home.html
 app.get('/', (req, res) => {

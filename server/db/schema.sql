@@ -59,6 +59,19 @@ CREATE TABLE IF NOT EXISTS work_logs (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS tesol_applicants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  applicant_id TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'pending',
+  applied_at TEXT,
+  rejection_reason TEXT,
+  basic TEXT NOT NULL,
+  application TEXT,
+  extra TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS work_log_files (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   log_key TEXT NOT NULL,
