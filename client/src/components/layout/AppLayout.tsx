@@ -6,6 +6,7 @@ import {
   Calendar, FileText, Image, Phone, ChevronLeft, ChevronRight, Home,
   BarChart3, LayoutDashboard, FileInput, GraduationCap
 } from 'lucide-react';
+import { StoreProvider } from '../../pages/interview/interviewStore';
 
 const NAV_SECTIONS = [
   {
@@ -140,7 +141,9 @@ export function AppLayout() {
 
       {/* 메인 콘텐츠 */}
       <main style={{ flex: 1, overflow: 'auto' }}>
-        <Outlet />
+        <StoreProvider>
+          <Outlet />
+        </StoreProvider>
       </main>
 
       <Toaster position="top-right" richColors />

@@ -105,11 +105,13 @@
       <div class="sum-item o"><span class="sum-label">전문직</span><span class="sum-val" id="sProf">-</span></div>
       <div class="sum-item t"><span class="sum-label">직원</span><span class="sum-val" id="sEmp">-</span></div>
       <div class="sum-item i"><span class="sum-label">업무일지</span><span class="sum-val" id="sWL">-</span></div>
+      <div class="sum-item p"><span class="sum-label">TESOL</span><span class="sum-val" id="sTesol">-</span></div>
     </div>
     <!-- 탭 + 필터 한 줄 -->
     <div class="ctrl-bar">
       <button class="tab-btn active" onclick="switchTab('iv')">면접 데이터</button>
       <button class="tab-btn" onclick="switchTab('wl')">업무일지</button>
+      <button class="tab-btn" onclick="switchTab('ts')">TESOL 신청</button>
       <div class="ctrl-sep"></div>
       <select id="fType" onchange="applyF()"><option value="">전체유형</option><option value="alba">알바</option><option value="employee">직원</option><option value="professional">전문직</option><option value="instructor_prompt">강사(프롬프트)</option><option value="instructor_ethics">강사(윤리)</option><option value="instructor_tesol">강사(테솔)</option><option value="instructor_translator">강사(번역)</option></select>
       <input type="text" id="fName" placeholder="이름 검색" oninput="applyF()" />
@@ -143,12 +145,24 @@
         <div class="empty" id="wlEmpty" style="display:none;">기록된 업무일지가 없습니다.</div>
       </div>
     </div>
+    <!-- TESOL -->
+    <div id="tabTS" style="display:none;">
+      <div class="panel">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>이름</th><th>이메일</th><th>전화</th><th>과정</th><th>직업</th><th>상태</th><th>신청일</th>
+          </tr></thead>
+          <tbody id="tsBody"></tbody>
+        </table>
+        <div class="empty" id="tsEmpty" style="display:none;">TESOL 신청 데이터가 없습니다.</div>
+      </div>
+    </div>
   </div>
   <script>
-    let ivs=[], fivs=[], wls={}, sf='created_at', sd=-1, expId=null;
+    let ivs=[], fivs=[], wls={}, tesols=[], sf='created_at', sd=-1, expId=null, tsExpId=null;
 
     async function loadAll() {
-      await Promise.all([loadIV(), loadWL()]);
+      await Promise.all([loadIV(), loadWL(), loadTS()]);
       updSum();
     }
     async function loadIV() {
@@ -163,6 +177,9 @@
     async function loadWL() {
       try { const r=await fetch('/api/worklogs'); wls=await r.json(); renderWL(); } catch(e){ console.error(e); }
     }
+    async function loadTS() {
+      try { const r=await fetch('/api/tesol'); tesols=await r.json(); renderTS(); } catch(e){ console.error(e); }
+    }
     function updSum() {
       q('#sTotal').textContent=ivs.length;
       q('#sAlba').textContent=ivs.filter(i=>i.form_type==='alba').length;
@@ -170,11 +187,16 @@
       q('#sProf').textContent=ivs.filter(i=>i.form_type==='professional').length;
       q('#sEmp').textContent=ivs.filter(i=>i.form_type==='employee').length;
       q('#sWL').textContent=Object.keys(wls).length;
+      q('#sTesol').textContent=tesols.length;
     }
     function switchTab(t) {
-      document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',t==='iv'?i===0:i===1));
+      document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+        const tabs=['iv','wl','ts'];
+        b.classList.toggle('active',tabs[i]===t);
+      });
       q('#tabIV').style.display=t==='iv'?'':'none';
       q('#tabWL').style.display=t==='wl'?'':'none';
+      q('#tabTS').style.display=t==='ts'?'':'none';
     }
     function applyF() {
       const tp=q('#fType').value, nm=q('#fName').value.toLowerCase(), df=q('#fFrom').value, dt=q('#fTo').value;
@@ -272,6 +294,50 @@
       tb.innerHTML=h;
     }
     function togWL(tr){ const det=tr.nextElementSibling; det.classList.toggle('open'); }
+
+    // TESOL 렌더링
+    function renderTS() {
+      const tb=q('#tsBody'), em=q('#tsEmpty');
+      if(!tesols.length){ tb.innerHTML=''; em.style.display=''; return; }
+      em.style.display='none';
+      let h='';
+      for(const t of tesols){
+        const b=t.basic||{}, ex=tsExpId===t.applicant_id;
+        const stBadge = t.status==='approved'?'b-em':t.status==='rejected'?'b-pr':'b-al';
+        const stLabel = t.status==='approved'?'승인':t.status==='rejected'?'거절':'대기';
+        h+=`<tr class="${ex?'exp':''}" onclick="togTS('${esc(t.applicant_id)}')">
+          <td>${esc(t.applicant_id).slice(0,12)}</td><td><b>${esc(b.name)||'-'}</b></td>
+          <td>${esc(b.email)||'-'}</td><td>${esc(b.phone)||'-'}</td>
+          <td>${esc(b.course)||'-'}</td><td>${esc(b.job)||'-'}</td>
+          <td><span class="b ${stBadge}">${stLabel}</span></td>
+          <td>${fmtDt(t.applied_at)}</td></tr>`;
+        if(ex){
+          const app=t.application||{}, ext=t.extra||{};
+          h+=`<tr class="det"><td colspan="8"><div class="det-wrap">`;
+          h+=`<div class="det-sec">1. 기본정보</div><div class="det-grid">`;
+          h+=di('이름',b.name)+di('이메일',b.email)+di('전화',b.phone)+di('생년월일',b.birthDate);
+          h+=di('과정',b.course)+di('직업',b.job);
+          h+=`</div>`;
+          h+=`<div class="det-sec">2. 자기소개</div><div class="det-grid wide">`;
+          h+=di('소개',b.introduction);
+          h+=`</div>`;
+          h+=`<div class="det-sec">3. 신청정보</div><div class="det-grid">`;
+          h+=di('언어',fmtArr(app.available_languages))+di('가능시간',app.available_time);
+          h+=di('경력',app.experience)+di('직종',fmtArr(app.occupation));
+          h+=di('학력',app.education)+di('통화시간',app.call_time);
+          h+=`</div>`;
+          h+=`<div class="det-sec">4. 기타정보</div><div class="det-grid">`;
+          h+=di('목표',fmtArr(ext.work_goals))+di('자격증',fmtArr(ext.language_certs));
+          h+=di('해외경험',ext.overseas_experience)+di('MT경험',ext.mt_experience);
+          h+=`</div>`;
+          if(t.rejection_reason){ h+=`<div class="det-sec">거절사유</div><div class="det-grid wide">`+di('사유',t.rejection_reason)+`</div>`; }
+          h+=`</div></td></tr>`;
+        }
+      }
+      tb.innerHTML=h;
+    }
+    function togTS(id){ tsExpId=tsExpId===id?null:id; renderTS(); }
+    function fmtArr(a){ if(!a)return''; if(Array.isArray(a))return a.join(', '); return String(a); }
 
     function q(s){ return document.querySelector(s); }
     function esc(s){ if(!s)return''; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
