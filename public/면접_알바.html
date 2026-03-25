@@ -347,70 +347,104 @@
     .personality-tests-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.6rem;
+      gap: 0;
       margin-bottom: 1rem;
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+    }
+    /* + 십자선 */
+    .personality-tests-grid::before,
+    .personality-tests-grid::after {
+      content: '';
+      position: absolute;
+      background: var(--color-border);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .personality-tests-grid::before {
+      top: 0; bottom: 0; left: 50%;
+      width: 2px; transform: translateX(-1px);
+    }
+    .personality-tests-grid::after {
+      left: 0; right: 0; top: 50%;
+      height: 2px; transform: translateY(-1px);
     }
     .personality-test-card {
       margin-bottom: 0;
-      padding: 0.9rem 1rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 0;
+      box-shadow: none;
+      border: none;
     }
     .personality-test-card h3 {
-      margin-bottom: 0.5rem;
-      font-size: 0.88rem;
+      margin-bottom: 0.3rem;
+      font-size: 0.8rem;
+      text-align: center;
+      color: var(--color-accent);
+      padding-bottom: 0.2rem;
+      border-bottom: 1px solid var(--color-border);
     }
     .personality-intro {
       background: var(--color-surface-alt);
-      padding: 0.6rem 1rem;
+      padding: 0.4rem 0.8rem;
       border-radius: var(--radius-sm);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--color-text-muted);
-      margin-bottom: 1rem;
+      margin-bottom: 0.5rem;
     }
     .personality-question {
-      padding: 0.5rem 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.35rem;
       background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      margin-bottom: 0.4rem;
-      transition: all 0.2s;
-      font-size: 0.85rem;
-      line-height: 1.5;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      margin-bottom: 0.15rem;
+      transition: border-color 0.15s;
+      font-size: 0.75rem;
+      line-height: 1.35;
     }
     .personality-question:hover {
       border-color: var(--color-accent);
-      box-shadow: 0 0 0 1px var(--color-accent-soft);
     }
     .personality-question .q-line {
       display: flex;
-      gap: 0.5rem;
-      align-items: flex-start;
-      margin-bottom: 0.5rem;
+      gap: 0.3rem;
+      align-items: baseline;
+      flex: 1;
+      margin-bottom: 0;
+      min-width: 0;
     }
     .personality-question .q-line .q-num {
       flex-shrink: 0;
     }
     .personality-question .q-num {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       color: var(--color-accent);
-      font-weight: 600;
-      margin-bottom: 0.3rem;
+      font-weight: 700;
+      margin-bottom: 0;
+      white-space: nowrap;
     }
     .personality-options {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.4rem;
-      margin-top: 0.35rem;
+      display: flex;
+      gap: 0.2rem;
+      flex-shrink: 0;
+      margin-top: 0;
     }
     .personality-option {
       display: flex;
-      align-items: flex-start;
-      gap: 0.35rem;
-      padding: 0.35rem 0.5rem;
+      align-items: center;
+      gap: 0.15rem;
+      padding: 0.1rem 0.3rem;
       border: 1px solid var(--color-border);
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 0.85rem;
+      transition: all 0.15s;
+      font-size: 0.75rem;
+      font-weight: 600;
     }
     .personality-option:hover {
       border-color: var(--color-accent);
@@ -420,9 +454,9 @@
       background: var(--color-accent-soft);
     }
     .personality-option input {
-      margin-top: 2px;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
+      margin: 0;
     }
     .personality-result {
       margin-top: 1.5rem;
@@ -845,6 +879,11 @@
     }
     @media (max-width: 768px) {
       .personality-tests-grid { grid-template-columns: 1fr; }
+      .personality-tests-grid::before { display: none; }
+      .personality-tests-grid::after { display: none; }
+      .personality-test-card { border-bottom: 2px solid var(--color-border); }
+      .personality-test-card:last-child { border-bottom: none; }
+      .personality-question { flex-direction: column; align-items: stretch; }
     }
 
     /* ===== RESPONSIVE ===== */
@@ -1428,8 +1467,7 @@
                 </div>
               </div>
               <div class="personality-question" data-dim="TF" data-a="T" data-b="F">
-                <div class="q-num">질문 8</div>
-                <div>나는 사건의 원인과 결과를 쉽게 파악한다 (a) / 나는 사람의 기분을 쉽게 파악한다 (b)</div>
+                <div class="q-line"><span class="q-num">질문 8</span> 나는 사건의 원인과 결과를 쉽게 파악한다 (a) / 나는 사람의 기분을 쉽게 파악한다 (b)</div>
                 <div class="personality-options">
                   <label class="personality-option"><input type="radio" name="q28" value="a" /><span>a</span></label>
                   <label class="personality-option"><input type="radio" name="q28" value="b" /><span>b</span></label>
@@ -1617,7 +1655,7 @@
 
         <div class="nav-buttons">
           <button class="btn btn-secondary" onclick="goToStep(3)">← 이전</button>
-          <button class="btn btn-primary" onclick="goToStep(6)">다음 단계로 →</button>
+          <button class="btn btn-primary" onclick="submitToServer(''); goToStep(6)">다음 단계로 →</button>
         </div>
       </section>
 
