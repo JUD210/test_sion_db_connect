@@ -5,7 +5,7 @@ import { Search, Eye, Filter, X, ChevronDown, ChevronUp, List, CalendarDays } fr
 import { AIDetailModal } from './AIDetailModal';
 import { MultiSelect } from './MultiSelect';
 import { AdminCalendar } from './AdminCalendar';
-import { loadLogs, employees, departmentCategories, homepageCategories, workTypes, aiToolsList } from './data';
+import { loadLogs, saveLogs, employees, departmentCategories, homepageCategories, workTypes, aiToolsList, fetchLogsFromAPI } from './data';
 import type { DailyLog, TimeSlotEntry } from './data';
 
 interface FlatRow {
@@ -43,7 +43,17 @@ export function AdminPage() {
   });
 
   useEffect(() => {
-    setLogs(loadLogs());
+    let cancelled = false;
+    (async () => {
+      const apiLogs = await fetchLogsFromAPI();
+      if (!cancelled && apiLogs && apiLogs.length > 0) {
+        setLogs(apiLogs);
+        saveLogs(apiLogs);
+      } else if (!cancelled) {
+        setLogs(loadLogs());
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const flatRows: FlatRow[] = useMemo(() => {

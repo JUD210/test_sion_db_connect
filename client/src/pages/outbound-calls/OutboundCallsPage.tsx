@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Plus, 
@@ -83,8 +83,33 @@ const STATUS_COLORS = ['#94a3b8', '#3b82f6', '#10b981', '#f43f5e', '#facc15'];
 
 // --- COMPONENTS ---
 
+// --- API helpers ---
+function saveCallToServer(id: string, data: any) {
+  fetch('/api/outbound-calls', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ call_id: id, data })
+  }).catch(() => {});
+}
+
+function deleteCallFromServer(id: string) {
+  fetch(`/api/outbound-calls/${id}`, { method: 'DELETE' }).catch(() => {});
+}
+
 export function OutboundCallsPage() {
   const [entries, setEntries] = useState<ContactEntry[]>(INITIAL_DATA);
+
+  // Load from API on mount
+  useEffect(() => {
+    fetch('/api/outbound-calls').then(r => r.json()).then((rows: any[]) => {
+      if (rows.length > 0) {
+        const loaded = rows.map((r: any) => r.data).filter(Boolean);
+        if (loaded.length > 0) {
+          setEntries(loaded as ContactEntry[]);
+        }
+      }
+    }).catch(() => {}); // silent fallback to mock
+  }, []);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mode, setMode] = useState<DashboardMode>('view');
@@ -189,10 +214,12 @@ export function OutboundCallsPage() {
 
     if (mode === 'add') {
       setEntries(prev => [...prev, formData as ContactEntry]);
+      saveCallToServer(formData.id!, formData);
       toast.success('신규 등록이 완료되었습니다.');
       setActiveId(formData.id!);
     } else {
       setEntries(prev => prev.map(e => e.id === activeId ? (formData as ContactEntry) : e));
+      saveCallToServer(activeId!, formData);
       toast.success('수정사항이 저장되었습니다.');
     }
     setMode('view');
@@ -202,6 +229,7 @@ export function OutboundCallsPage() {
     const idsToDelete = Array.from(selectedIds);
     if (idsToDelete.length === 0) return;
     setEntries(prev => prev.filter(e => !idsToDelete.includes(e.id)));
+    idsToDelete.forEach(id => deleteCallFromServer(id));
     setSelectedIds(new Set());
     setActiveId(null);
     toast.success(`${idsToDelete.length}건이 삭제되었습니다.`);

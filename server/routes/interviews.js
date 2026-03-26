@@ -43,78 +43,73 @@ router.post('/', upload.fields(FILE_FIELDS), async (req, res) => {
       VALUES (?, ?, ?, ?, ?)
     `);
 
-    // 트랜잭션으로 면접 데이터 + 파일 메타데이터 일괄 저장
-    const saveAll = db.transaction(async () => {
-      const result = insertInterview.run(
-        b.form_type || 'unknown',
-        b.name || null,
-        b.interview_date || null,
-        b.start_date || null,
-        b.available_months || null,
-        b.website_viewed || null,
-        b.support_field || null,
-        b.work_type || null,
-        b.commute_method || null,
-        b.commute_time || null,
-        b.birth_date || null,
-        b.age || null,
-        b.experience || null,
-        b.driving || null,
-        b.car_owned || null,
-        b.religion || null,
-        b.pt || null,
-        b.family || null,
-        b.marriage || null,
-        b.children || null,
-        b.skills || null,
-        b.english || null,
-        b.schedule_mon || null,
-        b.schedule_tue || null,
-        b.schedule_wed || null,
-        b.schedule_thu || null,
-        b.schedule_fri || null,
-        b.mbti || null,
-        b.mbti_scores || null,
-        b.personality_answers || null,
-        b.summary1 || null,
-        b.summary2 || null,
-        b.summary3 || null,
-        b.edu_feedback || null,
-        b.contract_data || null,
-        b.submitted_html || null,
-        b.lecture_type || null
-      );
+    // 면접 데이터 저장 (동기)
+    const result = insertInterview.run(
+      b.form_type || 'unknown',
+      b.name || null,
+      b.interview_date || null,
+      b.start_date || null,
+      b.available_months || null,
+      b.website_viewed || null,
+      b.support_field || null,
+      b.work_type || null,
+      b.commute_method || null,
+      b.commute_time || null,
+      b.birth_date || null,
+      b.age || null,
+      b.experience || null,
+      b.driving || null,
+      b.car_owned || null,
+      b.religion || null,
+      b.pt || null,
+      b.family || null,
+      b.marriage || null,
+      b.children || null,
+      b.skills || null,
+      b.english || null,
+      b.schedule_mon || null,
+      b.schedule_tue || null,
+      b.schedule_wed || null,
+      b.schedule_thu || null,
+      b.schedule_fri || null,
+      b.mbti || null,
+      b.mbti_scores || null,
+      b.personality_answers || null,
+      b.summary1 || null,
+      b.summary2 || null,
+      b.summary3 || null,
+      b.edu_feedback || null,
+      b.contract_data || null,
+      b.submitted_html || null,
+      b.lecture_type || null
+    );
 
-      const interviewId = result.lastInsertRowid;
+    const interviewId = result.lastInsertRowid;
 
-      // Upload files to S3 and save metadata
-      if (req.files) {
-        for (const fieldName of ['docResume', 'docPortfolio', 'docEtc']) {
-          const files = req.files[fieldName];
-          if (files && files.length > 0) {
-            const file = files[0];
-            const s3Key = makeS3Key(b.form_type || 'unknown', file.originalname);
-            let s3Url = null;
-            try {
-              s3Url = await uploadToS3(file.buffer, s3Key, file.mimetype);
-            } catch (uploadErr) {
-              console.error('S3 upload failed for', fieldName, uploadErr.message);
-            }
-            insertFile.run(
-              interviewId,
-              fieldName,
-              file.originalname,
-              s3Key,
-              s3Url || 'local_only'
-            );
+    // 파일 업로드 (비동기, DB 저장 후 별도 처리)
+    if (req.files) {
+      for (const fieldName of ['docResume', 'docPortfolio', 'docEtc']) {
+        const files = req.files[fieldName];
+        if (files && files.length > 0) {
+          const file = files[0];
+          const s3Key = makeS3Key(b.form_type || 'unknown', file.originalname);
+          let s3Url = null;
+          try {
+            s3Url = await uploadToS3(file.buffer, s3Key, file.mimetype);
+          } catch (uploadErr) {
+            console.error('S3 upload failed for', fieldName, uploadErr.message);
           }
+          insertFile.run(
+            interviewId,
+            fieldName,
+            file.originalname,
+            s3Key,
+            s3Url || 'local_only'
+          );
         }
       }
+    }
 
-      return interviewId;
-    });
-
-    const interviewId = await saveAll();
     res.json({ success: true, id: Number(interviewId) });
   } catch (err) {
     console.error('Interview save error:', err);

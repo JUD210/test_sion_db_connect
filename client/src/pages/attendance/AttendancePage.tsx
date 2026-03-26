@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   Clock, 
@@ -99,10 +99,35 @@ const INITIAL_RECORDS: AttendanceRecord[] = [
   },
 ];
 
+// --- API helpers ---
+function saveAttendanceToServer(key: string, data: any) {
+  fetch('/api/attendance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ record_key: key, data })
+  }).catch(() => {});
+}
+
 export function AttendancePage() {
   const [mode, setMode] = useState<Mode>('view');
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [records, setRecords] = useState<AttendanceRecord[]>(INITIAL_RECORDS);
+
+  // Load from API on mount
+  useEffect(() => {
+    fetch('/api/attendance').then(r => r.json()).then((rows: any[]) => {
+      if (rows.length > 0) {
+        const empRow = rows.find((r: any) => r.record_key === 'employees');
+        const recRow = rows.find((r: any) => r.record_key === 'records');
+        if (empRow?.data && Array.isArray(empRow.data) && empRow.data.length > 0) {
+          setEmployees(empRow.data);
+        }
+        if (recRow?.data && Array.isArray(recRow.data) && recRow.data.length > 0) {
+          setRecords(recRow.data);
+        }
+      }
+    }).catch(() => {}); // silent fallback to mock
+  }, []);
   const [selectedId, setSelectedId] = useState<string | null>(employees[0].id);
   const [searchTerm, setSearchTerm] = useState('');
   const [jobTypeFilter, setJobTypeFilter] = useState<string>('전체');
@@ -180,7 +205,9 @@ export function AttendancePage() {
         employeeId: selectedId,
         ...formData as AttendanceRecord
       };
-      setRecords([...records, newRecord]);
+      const newRecords = [...records, newRecord];
+      setRecords(newRecords);
+      saveAttendanceToServer('records', newRecords);
       alert('📌 출퇴근 기록이 추가되었습니다.');
     } else if (mode === 'edit') {
       const recordIdx = records.findIndex(r => r.employeeId === selectedId && r.date === formData.date);
@@ -188,6 +215,7 @@ export function AttendancePage() {
         const updated = [...records];
         updated[recordIdx] = { ...updated[recordIdx], ...formData };
         setRecords(updated);
+        saveAttendanceToServer('records', updated);
         alert('✏️ 기록이 수정되었습니다.');
       } else {
         alert('⚠️ 해당 날짜의 기록을 찾을 수 없습니다.');
@@ -195,6 +223,7 @@ export function AttendancePage() {
     } else if (mode === 'delete') {
       const filtered = records.filter(r => !(r.employeeId === selectedId && r.date === formData.date));
       setRecords(filtered);
+      saveAttendanceToServer('records', filtered);
       alert('🗑️ 기록이 삭제되었습니다.');
     }
     setMode('view');

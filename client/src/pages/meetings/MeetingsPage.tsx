@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Calendar as CalendarIcon, 
   List,
@@ -153,6 +153,19 @@ const getDurationColor = (duration: Duration) => {
 
 // --- Components ---
 
+// --- API helpers ---
+function saveMeetingToServer(id: string, data: any) {
+  fetch('/api/meetings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ meeting_id: id, data })
+  }).catch(() => {});
+}
+
+function deleteMeetingFromServer(id: string) {
+  fetch(`/api/meetings/${id}`, { method: 'DELETE' }).catch(() => {});
+}
+
 export default function MeetingsPage() {
   const [mode, setMode] = useState<AppMode>('VIEW');
   const [viewType, setViewType] = useState<'calendar' | 'list'>('calendar');
@@ -160,6 +173,25 @@ export default function MeetingsPage() {
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [schedules, setSchedules] = useState<Schedule[]>(INITIAL_SCHEDULES);
+
+  // Load from API on mount
+  useEffect(() => {
+    fetch('/api/meetings').then(r => r.json()).then((rows: any[]) => {
+      if (rows.length > 0) {
+        // Restore categories if saved separately
+        const catRow = rows.find((r: any) => r.meeting_id === '_categories');
+        if (catRow?.data && Array.isArray(catRow.data) && catRow.data.length > 0) {
+          setCategories(catRow.data);
+        }
+        // Load schedules (exclude the categories meta-row)
+        const scheduleRows = rows.filter((r: any) => r.meeting_id !== '_categories');
+        const loaded = scheduleRows.map((r: any) => r.data).filter(Boolean);
+        if (loaded.length > 0) {
+          setSchedules(loaded as Schedule[]);
+        }
+      }
+    }).catch(() => {}); // silent fallback to mock
+  }, []);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeFilters, setActiveFilters] = useState<string[]>(INITIAL_CATEGORIES.map(c => c.id));
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());

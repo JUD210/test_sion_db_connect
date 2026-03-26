@@ -106,12 +106,17 @@
       <div class="sum-item t"><span class="sum-label">직원</span><span class="sum-val" id="sEmp">-</span></div>
       <div class="sum-item i"><span class="sum-label">업무일지</span><span class="sum-val" id="sWL">-</span></div>
       <div class="sum-item p"><span class="sum-label">TESOL</span><span class="sum-val" id="sTesol">-</span></div>
+      <div class="sum-item g"><span class="sum-label">레벨테스트</span><span class="sum-val" id="sLT">-</span></div>
+      <div class="sum-item o"><span class="sum-label">서약서</span><span class="sum-val" id="sPL">-</span></div>
     </div>
     <!-- 탭 + 필터 한 줄 -->
     <div class="ctrl-bar">
-      <button class="tab-btn active" onclick="switchTab('iv')">면접 데이터</button>
+      <button class="tab-btn active" onclick="switchTab('iv')">면접</button>
       <button class="tab-btn" onclick="switchTab('wl')">업무일지</button>
-      <button class="tab-btn" onclick="switchTab('ts')">TESOL 신청</button>
+      <button class="tab-btn" onclick="switchTab('ts')">TESOL</button>
+      <button class="tab-btn" onclick="switchTab('lt')">레벨테스트</button>
+      <button class="tab-btn" onclick="switchTab('pl')">서약서</button>
+      <button class="tab-btn" onclick="switchTab('gn')">범용DB</button>
       <div class="ctrl-sep"></div>
       <select id="fType" onchange="applyF()"><option value="">전체유형</option><option value="alba">알바</option><option value="employee">직원</option><option value="professional">전문직</option><option value="instructor_prompt">강사(프롬프트)</option><option value="instructor_ethics">강사(윤리)</option><option value="instructor_tesol">강사(테솔)</option><option value="instructor_translator">강사(번역)</option></select>
       <input type="text" id="fName" placeholder="이름 검색" oninput="applyF()" />
@@ -157,13 +162,85 @@
         <div class="empty" id="tsEmpty" style="display:none;">TESOL 신청 데이터가 없습니다.</div>
       </div>
     </div>
+    <!-- 레벨테스트 -->
+    <div id="tabLT" style="display:none;">
+      <div class="panel">
+        <table><thead><tr><th>ID</th><th>데이터 요약</th><th>생성일</th></tr></thead><tbody id="ltBody"></tbody></table>
+        <div class="empty" id="ltEmpty" style="display:none;">레벨테스트 데이터가 없습니다.</div>
+      </div>
+    </div>
+    <!-- 서약서 -->
+    <div id="tabPL" style="display:none;">
+      <div class="panel">
+        <table><thead><tr><th>ID</th><th>데이터 요약</th><th>생성일</th></tr></thead><tbody id="plBody"></tbody></table>
+        <div class="empty" id="plEmpty" style="display:none;">서약서 데이터가 없습니다.</div>
+      </div>
+    </div>
+    <!-- 범용 DB 뷰어 -->
+    <div id="tabGN" style="display:none;">
+      <div class="ctrl-bar" style="margin-bottom:6px;">
+        <select id="gnModule" onchange="loadGeneric()" style="font-size:12px;padding:3px 6px;">
+          <option value="attendance">출퇴근</option>
+          <option value="meetings">미팅</option>
+          <option value="outbound-calls">거래처아웃콜</option>
+          <option value="photos">사진모음</option>
+          <option value="schedules">강의시간표</option>
+          <option value="rules">규정</option>
+          <option value="eval-criteria">평가기준</option>
+          <option value="lesson-plans">레슨플랜</option>
+        </select>
+        <span class="ctrl-count" id="gnCnt"></span>
+      </div>
+      <div class="panel">
+        <table><thead><tr><th>ID</th><th>데이터 요약</th><th>수정일</th></tr></thead><tbody id="gnBody"></tbody></table>
+        <div class="empty" id="gnEmpty" style="display:none;">데이터가 없습니다.</div>
+      </div>
+    </div>
   </div>
   <script>
-    let ivs=[], fivs=[], wls={}, tesols=[], sf='created_at', sd=-1, expId=null, tsExpId=null;
+    let ivs=[], fivs=[], wls={}, tesols=[], genericData=[], sf='created_at', sd=-1, expId=null, tsExpId=null;
 
+    let ltData=[], plData=[];
     async function loadAll() {
-      await Promise.all([loadIV(), loadWL(), loadTS()]);
+      await Promise.all([loadIV(), loadWL(), loadTS(), loadLT(), loadPL()]);
       updSum();
+    }
+    async function loadLT() {
+      try { const r=await fetch('/api/level-tests'); ltData=await r.json(); renderGenList('lt',ltData,'test_id'); } catch(e){}
+    }
+    async function loadPL() {
+      try { const r=await fetch('/api/pledges'); plData=await r.json(); renderGenList('pl',plData,'pledge_id'); } catch(e){}
+    }
+    async function loadGeneric() {
+      const mod=q('#gnModule').value;
+      try {
+        const r=await fetch('/api/'+mod); genericData=await r.json();
+        q('#gnCnt').textContent=genericData.length+'건';
+        const tb=q('#gnBody'), em=q('#gnEmpty');
+        if(!genericData.length){ tb.innerHTML=''; em.style.display=''; return; }
+        em.style.display='none';
+        let h='';
+        for(const d of genericData){
+          const id=Object.values(d).find(v=>typeof v==='string'&&v.length<50)||d.id;
+          const summary=typeof d.data==='object'?JSON.stringify(d.data).slice(0,120)+'...':String(d.data).slice(0,120);
+          h+=`<tr onclick="this.nextElementSibling.classList.toggle('open')"><td>${esc(String(id))}</td><td>${esc(summary)}</td><td>${d.updated_at||d.created_at||'-'}</td></tr>`;
+          h+=`<tr class="wl-det"><td colspan="3"><pre class="wl-pre">${esc(JSON.stringify(d,null,2))}</pre></td></tr>`;
+        }
+        tb.innerHTML=h;
+      } catch(e){ console.error(e); }
+    }
+    function renderGenList(prefix,data,idCol){
+      const tb=q('#'+prefix+'Body'), em=q('#'+prefix+'Empty');
+      if(!data.length){ tb.innerHTML=''; em.style.display=''; return; }
+      em.style.display='none';
+      let h='';
+      for(const d of data){
+        const id=d[idCol]||d.id;
+        const summary=typeof d.data==='object'?JSON.stringify(d.data).slice(0,120)+'...':String(d.data||'').slice(0,120);
+        h+=`<tr onclick="this.nextElementSibling.classList.toggle('open')"><td>${esc(String(id))}</td><td>${esc(summary)}</td><td>${d.created_at||d.updated_at||'-'}</td></tr>`;
+        h+=`<tr class="wl-det"><td colspan="3"><pre class="wl-pre">${esc(JSON.stringify(d,null,2))}</pre></td></tr>`;
+      }
+      tb.innerHTML=h;
     }
     async function loadIV() {
       try {
@@ -188,15 +265,19 @@
       q('#sEmp').textContent=ivs.filter(i=>i.form_type==='employee').length;
       q('#sWL').textContent=Object.keys(wls).length;
       q('#sTesol').textContent=tesols.length;
+      q('#sLT').textContent=ltData.length;
+      q('#sPL').textContent=plData.length;
     }
     function switchTab(t) {
+      const tabs=['iv','wl','ts','lt','pl','gn'];
       document.querySelectorAll('.tab-btn').forEach((b,i)=>{
-        const tabs=['iv','wl','ts'];
         b.classList.toggle('active',tabs[i]===t);
       });
-      q('#tabIV').style.display=t==='iv'?'':'none';
-      q('#tabWL').style.display=t==='wl'?'':'none';
-      q('#tabTS').style.display=t==='ts'?'':'none';
+      tabs.forEach(tab=>{
+        const el=q('#tab'+tab.toUpperCase());
+        if(el) el.style.display=tab===t?'':'none';
+      });
+      if(t==='gn') loadGeneric();
     }
     function applyF() {
       const tp=q('#fType').value, nm=q('#fName').value.toLowerCase(), df=q('#fFrom').value, dt=q('#fTo').value;

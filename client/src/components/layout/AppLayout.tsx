@@ -4,28 +4,41 @@ import { Toaster } from 'sonner';
 import {
   ClipboardCheck, ShieldCheck, Clock, ClipboardList,
   Calendar, FileText, Image, Phone, ChevronLeft, ChevronRight, Home,
-  BarChart3, LayoutDashboard, FileInput, GraduationCap
+  BarChart3, LayoutDashboard, FileInput, GraduationCap, BookOpen,
+  Users, CalendarClock, Settings, Scale, FileEdit, ListChecks
 } from 'lucide-react';
 import { StoreProvider } from '../../pages/interview/interviewStore';
 
 const NAV_SECTIONS = [
   {
-    title: '인사 관리',
+    title: '소비자 접수',
     items: [
-      { to: '/interview', icon: ClipboardCheck, label: '면접 평가' },
-      { to: '/pledge', icon: ShieldCheck, label: '업무/보안 서약서' },
-      { to: '/attendance', icon: Clock, label: '출퇴근 관리' },
       { to: '/tesol', icon: GraduationCap, label: 'TESOL 신청' },
+      { to: '/level-test', icon: BookOpen, label: '레벨테스트' },
     ],
   },
   {
-    title: '업무 관리',
+    title: '직원 도구',
     items: [
       { to: '/work-log', icon: ClipboardList, label: '업무일지' },
-      { to: '/meetings', icon: Calendar, label: '미팅 관리' },
+      { to: '/pledge', icon: ShieldCheck, label: '서약서' },
       { to: '/guidelines', icon: FileText, label: '사내업무지침' },
-      { to: '/photo-dashboard', icon: Image, label: '사진모음' },
+      { to: '/lesson-plan', icon: BookOpen, label: '레슨플랜' },
+    ],
+  },
+  {
+    title: '관리자 도구',
+    items: [
+      { to: '/interview', icon: ClipboardCheck, label: '면접 평가' },
+      { to: '/attendance', icon: Clock, label: '출퇴근 관리' },
+      { to: '/meetings', icon: Calendar, label: '미팅 관리' },
       { to: '/outbound-calls', icon: Phone, label: '거래처 아웃콜' },
+      { to: '/photo-dashboard', icon: Image, label: '사진모음' },
+      { to: '/schedule', icon: CalendarClock, label: '강의시간표' },
+      { to: '/rules-mgmt', icon: Scale, label: '규정관리' },
+      { to: '/rules-editor', icon: FileEdit, label: '규정편집' },
+      { to: '/eval-criteria', icon: ListChecks, label: '평가기준' },
+      { to: '/admin-system', icon: Settings, label: '관리자통합' },
     ],
   },
 ];

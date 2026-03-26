@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Download, 
   Plus, 
@@ -132,8 +132,33 @@ const INITIAL_DATA: PhotoItem[] = [
 
 const MOCK_ITEMS: PhotoItem[] = INITIAL_DATA;
 
+// --- API helpers ---
+function savePhotoToServer(id: string, data: any) {
+  fetch('/api/photos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ photo_id: id, data })
+  }).catch(() => {});
+}
+
+function deletePhotoFromServer(id: string) {
+  fetch(`/api/photos/${id}`, { method: 'DELETE' }).catch(() => {});
+}
+
 export function PhotoDashboardPage() {
   const [items, setItems] = useState<PhotoItem[]>(MOCK_ITEMS);
+
+  // Load from API on mount
+  useEffect(() => {
+    fetch('/api/photos').then(r => r.json()).then((rows: any[]) => {
+      if (rows.length > 0) {
+        const loaded = rows.map((r: any) => r.data).filter(Boolean);
+        if (loaded.length > 0) {
+          setItems(loaded as PhotoItem[]);
+        }
+      }
+    }).catch(() => {}); // silent fallback to mock (photos have embedded image refs)
+  }, []);
   const [mode, setMode] = useState<Mode>('VIEW');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>('ALL');
@@ -190,6 +215,7 @@ export function PhotoDashboardPage() {
   const handleDeleteSelected = () => {
     if (selectedIds.size === 0) return;
     setItems(items.filter(item => !selectedIds.has(item.id)));
+    selectedIds.forEach(id => deletePhotoFromServer(id));
     setSelectedIds(new Set());
     toast.error(`${selectedIds.size}개의 항목이 삭제되었습니다.`);
   };
@@ -203,16 +229,21 @@ export function PhotoDashboardPage() {
       date: new Date().toISOString().split('T')[0]
     };
     setItems([newItem, ...items]);
+    savePhotoToServer(newItem.id, newItem);
     toast.success('새 항목이 추가되었습니다.');
   };
 
   const handleDeleteItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
+    deletePhotoFromServer(id);
     toast.error('항목이 삭제되었습니다.');
   };
 
   const handleUpdateItem = (id: string, updates: Partial<PhotoItem>) => {
-    setItems(items.map(item => item.id === id ? { ...item, ...updates } : item));
+    const updated = items.map(item => item.id === id ? { ...item, ...updates } : item);
+    setItems(updated);
+    const updatedItem = updated.find(item => item.id === id);
+    if (updatedItem) savePhotoToServer(id, updatedItem);
   };
 
   const exportToExcel = () => {

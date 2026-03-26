@@ -255,3 +255,32 @@ export function saveLogs(logs: DailyLog[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
   localStorage.setItem(STORAGE_KEY + '-version', DATA_VERSION);
 }
+
+// ── API helpers ──
+
+export async function fetchLogsFromAPI(): Promise<DailyLog[] | null> {
+  try {
+    const res = await fetch('/api/worklogs');
+    if (!res.ok) return null;
+    const data = await res.json(); // { key: logData, key: logData, ... }
+    const logs: DailyLog[] = Object.values(data);
+    if (logs.length === 0) return null;
+    return logs;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveLogToAPI(log: DailyLog): Promise<boolean> {
+  try {
+    const key = `${log.employeeId}_${log.date}`;
+    const res = await fetch(`/api/worklogs/${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: log }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

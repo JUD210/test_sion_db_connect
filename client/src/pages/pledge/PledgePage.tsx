@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   FileText,
   ShieldCheck,
@@ -150,6 +150,50 @@ export function PledgePage() {
   const [jobTitle, setJobTitle] = useState('기획자');
   const [contractType, setContractType] = useState('정규직');
   const [signature, setSignature] = useState('');
+  const loadedRef = useRef(false);
+
+  // Load pledge template from API on mount
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    fetch('/api/pledges/pledge-template')
+      .then((r) => r.json())
+      .then((row: any) => {
+        if (row && row.data && row.data.sections) {
+          setSections(row.data.sections);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Save pledge template when sections change
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) { isInitialMount.current = false; return; }
+    fetch('/api/pledges', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pledge_id: 'pledge-template', data: { sections } }),
+    }).catch(() => {});
+  }, [sections]);
+
+  // Submit pledge to server
+  const submitPledge = () => {
+    const pledgeId = `pledge-${userName}-${Date.now()}`;
+    fetch('/api/pledges', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pledge_id: pledgeId,
+        data: {
+          userName, jobTitle, contractType, signature,
+          sections,
+          checkedItems: Array.from(checkedItems),
+          submittedAt: new Date().toISOString(),
+        },
+      }),
+    }).catch(() => {});
+  };
 
   const jobRoles = ["개발자", "기획자", "디자이너", "마케터", "아웃바운드 영업", "번역사 매칭", "대면 상담", "기타"];
 
@@ -395,7 +439,7 @@ export function PledgePage() {
                       <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)} disabled={totalProgress < 100} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
                   </div>
-                  <button disabled={totalProgress < 100 || !signature} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm">최종 서약서 제출</button>
+                  <button disabled={totalProgress < 100 || !signature} onClick={submitPledge} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm">최종 서약서 제출</button>
                 </div>
               </SectionContainer>
             </div>

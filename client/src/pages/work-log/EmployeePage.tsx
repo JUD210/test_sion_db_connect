@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Calendar } from './Calendar';
 import { DailyDetail } from './DailyDetail';
-import { loadLogs, saveLogs, currentEmployee, loadTemplates, saveTemplates } from './data';
+import { loadLogs, saveLogs, currentEmployee, loadTemplates, saveTemplates, fetchLogsFromAPI, saveLogToAPI } from './data';
 import type { DailyLog, PromptTemplate } from './data';
 import { format } from 'date-fns';
 import { PanelLeftClose, PanelLeftOpen, FileText, Settings, Plus, Trash2, Save, Download, FileSpreadsheet, FileCode, ImageIcon, ListFilter, LayoutGrid } from 'lucide-react';
@@ -121,7 +121,17 @@ export function EmployeePage() {
   const appRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setLogs(loadLogs());
+    let cancelled = false;
+    (async () => {
+      const apiLogs = await fetchLogsFromAPI();
+      if (!cancelled && apiLogs && apiLogs.length > 0) {
+        setLogs(apiLogs);
+        saveLogs(apiLogs); // sync to localStorage
+      } else if (!cancelled) {
+        setLogs(loadLogs()); // fallback to localStorage / mock
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const myLogs = logs.filter(l => l.employeeId === currentEmployee.id);
@@ -143,6 +153,8 @@ export function EmployeePage() {
       saveLogs(updated);
       return updated;
     });
+    // Also persist to API (fire-and-forget)
+    saveLogToAPI(log);
   }, []);
 
   const downloadExcel = () => {
