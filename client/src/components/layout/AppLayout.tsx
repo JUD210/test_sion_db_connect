@@ -5,9 +5,11 @@ import {
   ClipboardCheck, ShieldCheck, Clock, ClipboardList,
   Calendar, FileText, Image, Phone, ChevronLeft, ChevronRight, Home,
   BarChart3, LayoutDashboard, FileInput, GraduationCap, BookOpen,
-  Users, CalendarClock, Settings, Scale, FileEdit, ListChecks
+  Users, CalendarClock, Settings, Scale, FileEdit, ListChecks, Construction
 } from 'lucide-react';
 import { StoreProvider } from '../../pages/interview/interviewStore';
+
+const C = Construction; // 공사중 아이콘 약어
 
 const NAV_SECTIONS = [
   {
@@ -15,6 +17,12 @@ const NAV_SECTIONS = [
     items: [
       { to: '/tesol', icon: GraduationCap, label: 'TESOL 신청' },
       { to: '/level-test', icon: BookOpen, label: '레벨테스트' },
+      { to: '/coming/exam', icon: C, label: '시험지(응시자)' },
+      { to: '/coming/expert-apply', icon: C, label: '전문가 지원' },
+      { to: '/coming/expert-step1', icon: C, label: '전문가 신청 1단계' },
+      { to: '/coming/translator-apply', icon: C, label: '번역가 지원' },
+      { to: '/coming/instructor-apply', icon: C, label: '강사 지원(출력)' },
+      { to: '/coming/instructor-apply-v3', icon: C, label: '강사 지원 v3' },
     ],
   },
   {
@@ -25,6 +33,8 @@ const NAV_SECTIONS = [
       { to: '/pledge', icon: ShieldCheck, label: '서약서' },
       { to: '/guidelines', icon: FileText, label: '사내업무지침' },
       { to: '/lesson-plan', icon: BookOpen, label: '레슨플랜' },
+      { to: '/coming/prompt-guide', icon: C, label: '프롬사용법' },
+      { to: '/coming/manual-list', icon: C, label: '매뉴얼 리스트' },
     ],
   },
   {
@@ -41,6 +51,47 @@ const NAV_SECTIONS = [
       { to: '/rules-editor', icon: FileEdit, label: '규정편집' },
       { to: '/eval-criteria', icon: ListChecks, label: '평가기준' },
       { to: '/admin-system', icon: Settings, label: '관리자통합' },
+      { to: '/coming/overdue', icon: C, label: '미수금관리' },
+      { to: '/coming/shortcuts', icon: C, label: '바로가기' },
+      { to: '/coming/app-forms', icon: C, label: '신청서모음' },
+      { to: '/coming/instructor-eval', icon: C, label: '강사채점' },
+      { to: '/coming/expert-admin', icon: C, label: '전문가 관리' },
+      { to: '/coming/expert-consult', icon: C, label: '상담관리' },
+      { to: '/coming/instructor-flow', icon: C, label: '면접플로우' },
+      { to: '/coming/expert-1page', icon: C, label: '전문가지원서' },
+      { to: '/coming/meeting-form', icon: C, label: '미팅신폼' },
+    ],
+  },
+  {
+    title: '규정/DB',
+    items: [
+      { to: '/coming/rules-layout', icon: C, label: '규정 레이아웃' },
+      { to: '/coming/rules-manual', icon: C, label: '규정매뉴얼' },
+      { to: '/coming/rules-jungeol', icon: C, label: '규정관리(준걸)' },
+      { to: '/coming/db-page', icon: C, label: 'DB 분류' },
+      { to: '/coming/instructor-curri', icon: C, label: '강사커리' },
+      { to: '/coming/marketing', icon: C, label: '마케팅' },
+      { to: '/coming/question-bank', icon: C, label: '문제은행' },
+    ],
+  },
+  {
+    title: '홈페이지/랜딩',
+    items: [
+      { to: '/coming/tesol-landing', icon: C, label: 'TESOL 랜딩v4' },
+      { to: '/coming/ceo-homepage', icon: C, label: '대표님 홈페이지' },
+      { to: '/coming/hutechc-homepage', icon: C, label: '휴텍씨 홈페이지' },
+      { to: '/coming/ceo-v3-deploy', icon: C, label: '대표님 v3(배포)' },
+      { to: '/coming/combined-homepage', icon: C, label: '결합홈페이지' },
+      { to: '/coming/classic-translation', icon: C, label: '고전번역 서비스' },
+      { to: '/coming/translation-all', icon: C, label: '번역전체' },
+      { to: '/coming/arabic-translation', icon: C, label: '번역_아랍 v3' },
+      { to: '/coming/tongdok', icon: C, label: '통독-전체 v3' },
+      { to: '/coming/aite', icon: C, label: 'AITE' },
+      { to: '/coming/iita', icon: C, label: 'IITA협회' },
+      { to: '/coming/ai-studio', icon: C, label: 'AI STUDIO v3' },
+      { to: '/coming/onepage', icon: C, label: '원페이지' },
+      { to: '/coming/semiconductor', icon: C, label: '반도체/조선/방산' },
+      { to: '/coming/physical', icon: C, label: '피지컬' },
     ],
   },
 ];
