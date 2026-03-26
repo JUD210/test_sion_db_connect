@@ -20,7 +20,8 @@ const NAV_SECTIONS = [
   {
     title: '직원 도구',
     items: [
-      { to: '/work-log', icon: ClipboardList, label: '업무일지' },
+      { to: '/work-log', icon: ClipboardList, label: '업무일지(직원)' },
+      { to: '/work-log/admin', icon: ClipboardList, label: '업무일지(관리)' },
       { to: '/pledge', icon: ShieldCheck, label: '서약서' },
       { to: '/guidelines', icon: FileText, label: '사내업무지침' },
       { to: '/lesson-plan', icon: BookOpen, label: '레슨플랜' },
@@ -29,7 +30,8 @@ const NAV_SECTIONS = [
   {
     title: '관리자 도구',
     items: [
-      { to: '/interview', icon: ClipboardCheck, label: '면접 평가' },
+      { to: '/interview', icon: ClipboardCheck, label: '면접 입력' },
+      { to: '/interview/dashboard', icon: ClipboardCheck, label: '면접 대시보드' },
       { to: '/attendance', icon: Clock, label: '출퇴근 관리' },
       { to: '/meetings', icon: Calendar, label: '미팅 관리' },
       { to: '/outbound-calls', icon: Phone, label: '거래처 아웃콜' },
@@ -48,7 +50,7 @@ export function AppLayout() {
   const location = useLocation();
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f3f6fb' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 58px)', overflow: 'hidden', background: '#f3f6fb' }}>
       {/* 사이드바 */}
       <aside
         style={{

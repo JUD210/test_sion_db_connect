@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 
 // Types
 export type ApplicantType = "강사" | "직원";
@@ -320,32 +320,109 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
+// ---------- API helpers ----------
+
+const FORM_TYPE = "react_interview_v3";
+
+async function saveInterviewToServer(interview: Applicant): Promise<void> {
+  try {
+    const formData = new FormData();
+    formData.append("form_type", FORM_TYPE);
+    formData.append("name", interview.name || "");
+    formData.append("submitted_html", JSON.stringify(interview));
+    if (interview.mbti) formData.append("mbti", interview.mbti);
+    if (interview.date) formData.append("interview_date", interview.date);
+    await fetch("/api/interviews", { method: "POST", body: formData });
+  } catch (e) {
+    console.error("Interview save error:", e);
+  }
+}
+
+async function fetchInterviewsFromServer(): Promise<Applicant[]> {
+  try {
+    const res = await fetch("/api/interviews");
+    if (!res.ok) return [];
+    const rows: { id: number; form_type: string }[] = await res.json();
+
+    // Only load rows created by this React V3 form
+    const v3Rows = rows.filter((r) => r.form_type === FORM_TYPE);
+    if (v3Rows.length === 0) return [];
+
+    const loaded: Applicant[] = [];
+    for (const row of v3Rows) {
+      try {
+        const detailRes = await fetch(`/api/interviews/${row.id}`);
+        if (!detailRes.ok) continue;
+        const detail = await detailRes.json();
+        if (detail.submitted_html) {
+          const parsed: Applicant = JSON.parse(detail.submitted_html);
+          // Recalculate grade in case formula changed
+          const { grade, totalScore } = calculateGrade(parsed);
+          loaded.push({ ...parsed, grade, totalScore });
+        }
+      } catch {
+        // skip malformed rows
+      }
+    }
+    return loaded;
+  } catch (e) {
+    console.error("Interview fetch error:", e);
+    return [];
+  }
+}
+
+// ---------- Provider ----------
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [applicants, setApplicants] = useState<Applicant[]>(SAMPLE_APPLICANTS);
   const [currentApplicant, setCurrentApplicant] = useState<Applicant | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
-  const addApplicant = (a: Applicant) => {
+  // On mount: fetch from API and merge with sample data
+  useEffect(() => {
+    let cancelled = false;
+    fetchInterviewsFromServer().then((serverApplicants) => {
+      if (cancelled) return;
+      if (serverApplicants.length > 0) {
+        setApplicants((prev) => {
+          // Merge: server data takes priority by id, keep samples that don't conflict
+          const serverIds = new Set(serverApplicants.map((a) => a.id));
+          const remaining = prev.filter((a) => !serverIds.has(a.id));
+          return [...remaining, ...serverApplicants];
+        });
+      }
+      setLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const addApplicant = useCallback((a: Applicant) => {
     const { grade, totalScore } = calculateGrade(a);
     const updated = { ...a, grade, totalScore };
     setApplicants((prev) => [...prev, updated]);
-  };
+    saveInterviewToServer(updated);
+  }, []);
 
-  const updateApplicant = (id: string, updates: Partial<Applicant>) => {
+  const updateApplicant = useCallback((id: string, updates: Partial<Applicant>) => {
     setApplicants((prev) =>
       prev.map((a) => {
         if (a.id === id) {
           const merged = { ...a, ...updates };
           const { grade, totalScore } = calculateGrade(merged);
-          return { ...merged, grade, totalScore };
+          const updated = { ...merged, grade, totalScore };
+          // Save updated interview to server (append-only)
+          saveInterviewToServer(updated);
+          return updated;
         }
         return a;
       })
     );
-  };
+  }, []);
 
-  const deleteApplicant = (id: string) => {
+  const deleteApplicant = useCallback((id: string) => {
     setApplicants((prev) => prev.filter((a) => a.id !== id));
-  };
+    // No server delete — interviews are append-only
+  }, []);
 
   return (
     <StoreContext.Provider value={{ applicants, addApplicant, updateApplicant, deleteApplicant, currentApplicant, setCurrentApplicant }}>
